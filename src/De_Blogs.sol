@@ -20,14 +20,16 @@ contract De_Blogs is ERC721URIStorage, Ownable {
   struct BlogPost {
     string title;
     string desc;
-    uint256 date;
     string content;
-    string[] tags;
+    string img;
+    string tags;
+    uint256 date;
   }
 
   BlogPost[] public blogPosts;
 
-  constructor() ERC721('De_blogs', 'De_Blog') {}
+  constructor() ERC721('De_blogs', 'De_Blog') {
+  }
 
   function grabInfo(uint256 _tokenId) public view returns (string memory) {
     bytes memory infos = abi.encodePacked(
@@ -50,7 +52,7 @@ contract De_Blogs is ERC721URIStorage, Ownable {
     bytes memory svg = abi.encodePacked(
       '<svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMinYMin meet" viewBox="0 0 350 350" overflow="auto">',
       '<style>.base { fill: white; font-family: arial; font-size: 14px; }</style>',
-      '<rect width="100%" height="100%" fill="black" />',
+      '<rect width="100%" height="100%" fill="white" />',
       grabInfo(_tokenId),
       '</svg>'
     );
@@ -59,6 +61,7 @@ contract De_Blogs is ERC721URIStorage, Ownable {
   }
 
   function getTokenUri(uint256 _tokenId) public view returns (string memory) {
+
     bytes memory dataURI = abi.encodePacked(
       '{',
       '"name": "Blog Post #',
@@ -67,11 +70,19 @@ contract De_Blogs is ERC721URIStorage, Ownable {
       '"description": "',
       getDesc(_tokenId),
       '",',
-      '"image": "',
+      '"img": "',
+      getImg(_tokenId),
+      '",',
+      '"tags": "',
+      getTags(_tokenId),
+      '",',
+      '"content": "',
       generatePost(_tokenId),
       '"',
       '}'
     );
+
+
     return string(abi.encodePacked('data:application/json;base64,', Base64.encode(dataURI)));
   }
 
@@ -80,12 +91,12 @@ contract De_Blogs is ERC721URIStorage, Ownable {
     string calldata _description,
     string calldata _content,
     string calldata _img,
-    string[] calldata _tags
+    string calldata _tags
   ) public onlyOwner {
     _tokenIds.increment();
     uint256 newItemId = _tokenIds.current();
     _safeMint(msg.sender, newItemId);
-    BlogPost memory post = BlogPost(_title, _description, block.timestamp, _content, _tags);
+    BlogPost memory post = BlogPost(_title, _description, _content, _img, _tags, block.timestamp);
     blogPosts.push(post);
     idToPost[newItemId] = post;
     idToImg[newItemId] = _img;
@@ -93,7 +104,7 @@ contract De_Blogs is ERC721URIStorage, Ownable {
   }
 
   function getBlogsLen() public view returns (uint256) {
-    return blogPosts.length;
+    return _tokenIds.current();
   }
 
   function getTitle(uint256 _tokenId) public view returns (string memory) {
@@ -116,7 +127,7 @@ contract De_Blogs is ERC721URIStorage, Ownable {
     return post.content;
   }
 
-  function getTags(uint256 _tokenId) public view returns (string[] memory) {
+  function getTags(uint256 _tokenId) public view returns (string memory) {
     BlogPost memory post = idToPost[_tokenId];
     return post.tags;
   }
@@ -129,47 +140,58 @@ contract De_Blogs is ERC721URIStorage, Ownable {
     return owner();
   }
 
-  function updatePostTitle(uint256 _tokenId, string memory _title) public onlyOwner {
+  function updatePostTitle(uint256 _tokenId, string calldata _title) public onlyOwner {
     require(_exists(_tokenId), "ID doesn't exist");
     require(ownerOf(_tokenId) == msg.sender, 'non-ownership');
     BlogPost storage post = idToPost[_tokenId];
     delete post.title;
     post.title = _title;
+    idToPost[_tokenId] = post;
 
     _setTokenURI(_tokenId, getTokenUri(_tokenId));
   }
 
-  function updatePostDesc(uint256 _tokenId, string memory _desc) public onlyOwner {
+  function updatePostDesc(uint256 _tokenId, string calldata _desc) public onlyOwner {
     require(_exists(_tokenId), "ID doesn't exist");
     require(ownerOf(_tokenId) == msg.sender, 'non-ownership');
     BlogPost storage post = idToPost[_tokenId];
     delete post.desc;
     post.desc = _desc;
+    idToPost[_tokenId] = post;
 
     _setTokenURI(_tokenId, getTokenUri(_tokenId));
   }
 
-  function updatePostContent(uint256 _tokenId, string memory _content) public onlyOwner {
+  function updatePostContent(uint256 _tokenId, string calldata _content) public onlyOwner {
     require(_exists(_tokenId), "ID doesn't exist");
     require(ownerOf(_tokenId) == msg.sender, 'non-ownership');
     BlogPost storage post = idToPost[_tokenId];
     delete post.content;
     post.content = _content;
+    idToPost[_tokenId] = post;
 
     _setTokenURI(_tokenId, getTokenUri(_tokenId));
   }
 
-  function updatePostTags(uint256 _tokenId, string[] memory _tags) public onlyOwner {
+  function updatePostTags(uint256 _tokenId, string calldata _tags) public onlyOwner {
     require(_exists(_tokenId), "ID doesn't exist");
     require(ownerOf(_tokenId) == msg.sender, 'non-ownership');
     BlogPost storage post = idToPost[_tokenId];
     delete post.tags;
     post.tags = _tags;
+    idToPost[_tokenId] = post;
 
     _setTokenURI(_tokenId, getTokenUri(_tokenId));
   }
 
   function updateImg(uint256 _tokenId, string calldata _img) public onlyOwner {
+    require(_exists(_tokenId), "ID doesn't exist");
+    require(ownerOf(_tokenId) == msg.sender, 'non-ownership');
+    BlogPost storage post = idToPost[_tokenId];
+    delete post.img;
+    post.img = _img;
+
     idToImg[_tokenId] = _img;
+    _setTokenURI(_tokenId, getTokenUri(_tokenId));
   }
 }
